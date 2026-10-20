@@ -54,3 +54,4 @@ El proyecto contempla y documenta rigurosamente todos los apartados evaluables:
 * **Tablero de Control:** Backlog en ProofHub bajo la nomenclatura oficial `P0.0-ASIXc2gC-Gnn`.
 * **Ciclo de Sprints:** Planificación al inicio de cada quincena, seguimiento a mitad de período, y sesión de *Review* con demostración y retrospectiva al finalizar.
 * **Definición de "Hecho" (Definition of Done):** El componente funciona, está probado, se encuentra documentado en Markdown, cuenta con commits descriptivos en Git y está marcado como completado en ProofHub.
+Prueba pull en EC2
