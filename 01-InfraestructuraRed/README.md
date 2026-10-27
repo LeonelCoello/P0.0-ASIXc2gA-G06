@@ -6,11 +6,9 @@
 
 ---
 
-## 1. Introducción y necesidad
+## 1. Alcance de este documento
 
-El Ayuntamiento de Barcelona necesita un portal web centralizado para consultar los equipamientos educativos de la ciudad a partir del dataset público de OpenData BCN. Ante el cliente debemos poder demostrar que la solución **funciona**, que está **bien organizada** y que es **segura y fiable**.
-
-Antes de instalar ningún servicio hace falta una base de infraestructura sólida: un servidor accesible desde Internet, un acceso remoto controlado, usuarios con responsabilidades claras y un repositorio donde versionar todo el trabajo. Este documento recoge esa base, que es el punto de partida del resto de carpetas del proyecto.
+Este documento recoge el trabajo de **infraestructura y red** realizado en el **primer sprint**: la organización del repositorio y del tablero Kanban, el servidor en AWS, las reglas de red, el acceso remoto por SSH, los usuarios del sistema y la conexión del servidor con GitHub. Es la base sobre la que se despliegan los servicios del resto de carpetas del proyecto.
 
 **Objetivos de este sprint:**
 - Organizar el trabajo con un repositorio Git estructurado y un tablero Kanban.
@@ -18,8 +16,6 @@ Antes de instalar ningún servicio hace falta una base de infraestructura sólid
 - Definir las reglas de red que controlan qué tráfico llega al servidor.
 - Crear los usuarios necesarios y habilitar el acceso por SSH.
 - Conectar el servidor con GitHub de forma segura.
-
-**Dirigido a:** el equipo de administración, que mantiene la infraestructura, y al cliente, que recibe el servicio final.
 
 ## 2. Tecnologías elegidas y justificación
 
