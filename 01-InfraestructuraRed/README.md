@@ -53,10 +53,6 @@ El trabajo se gestiona en ProofHub con un tablero de seis columnas: *Pendiente (
 
 ![Backlog inicial en ProofHub](img/02-backlog-sprint1.png)
 
-Estado del tablero durante el sprint, con las primeras tareas ya finalizadas:
-
-![Tablero Kanban con tareas finalizadas](img/16-proofhub-sprint1-finalizado.png)
-
 ### 3.3 Fases del sprint
 
 | Fase | Contenido | Estado |
