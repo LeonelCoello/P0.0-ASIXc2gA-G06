@@ -292,6 +292,3 @@ sudo deluser <usuario> sudo         # retirar permisos de administrador
 
 **Dependencias de esta fase:** instancia EC2 con Ubuntu Server 24.04 LTS, Security Group con los puertos 22, 80 y 443, par de claves `claves-educabcn` y acceso a GitHub.
 
-## 13. Siguientes pasos
-
-Los servicios que se despliegan sobre esta infraestructura se documentan en su carpeta correspondiente del repositorio: DNS y DHCP, web y FTP, base de datos, despliegue de la aplicación y efectos WOW.
