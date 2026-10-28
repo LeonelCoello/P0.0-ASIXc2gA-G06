@@ -1,10 +1,12 @@
 # 01 - Infraestructura y Red · Proyecto P0.0 EducaBCN
 
-**Grupo:** G06 · ASIX c2gA
+**Grupo:** G06 · ASIXc 2A
+
 **Equipo:** Leonel Coello · Oussama Boukhali
+
 **Contenido:** Sprint 1 · Organización del proyecto, servidor en la nube, acceso remoto, usuarios y conexión con el repositorio
 
----
+
 
 ## 1. Alcance de este documento
 
