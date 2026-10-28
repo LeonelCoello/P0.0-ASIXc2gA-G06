@@ -1,7 +1,9 @@
 # 04 - Servicios de Base de Datos · Proyecto P0.0 EducaBCN
 
-**Grupo:** G06 · ASIX c2gA
+**Grupo:** G06 · ASIXc 2A
+
 **Equipo:** Leonel Coello · Oussama Boukhali
+
 **Contenido:** Sprint 1 · MySQL, base de datos `EducaBCN` y carga del dataset de OpenData BCN
 
 ---
