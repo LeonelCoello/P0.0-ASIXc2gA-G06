@@ -6,7 +6,7 @@
 
 **Contenido:** Sprint 1 · Servidor web Apache y entorno PHP
 
-\---
+
 
 ## 1\. Alcance de este documento
 
@@ -27,7 +27,7 @@ Este documento recoge la instalación y verificación del **servidor web** del p
 |Servidor web|Apache 2.4|Estable, muy extendido y con abundante documentación. Se integra con PHP mediante módulo|
 |Lenguaje|PHP 8.3|Versión incluida en Ubuntu 24.04 LTS, con soporte oficial de la distribución y actualizaciones de seguridad|
 |Integración con Apache|`libapache2-mod-php`|Apache procesa los ficheros `.php` directamente, sin servicios adicionales|
-|Conexión con la base de datos|`php-mysql` (extensiones `mysqli` y `pdo\\\\\\\_mysql`)|Permite a la aplicación consultar MySQL|
+|Conexión con la base de datos|`php-mysql` (extensiones `mysqli` y `pdo_mysql`)|Permite a la aplicación consultar MySQL|
 
 ## 3\. Instalación del servidor web
 
@@ -39,7 +39,7 @@ sudo apt install apache2 -y
 
 ![Instalación de Apache](img/01-apache-instalacion.png)
 
-El puerto 80 ya está permitido en el Security Group de la instancia (ver `01-InfraestructuraRed`), por lo que el servidor es accesible desde `http://<IP\\\\\\\_PUBLICA>`.
+El puerto 80 ya está permitido en el Security Group de la instancia (ver `01-InfraestructuraRed`), por lo que el servidor es accesible desde `http://<IP_PUBLICA>`.
 
 ## 4\. Instalación del entorno PHP
 
@@ -49,7 +49,7 @@ Se instala PHP junto con el módulo de Apache y la extensión para MySQL:
 sudo apt install php libapache2-mod-php php-mysql -y
 ```
 
-!\[Instalación de PHP](img/02-php-instalacion.png)
+![Instalación de PHP](img/02-php-instalacion.png)
 
 Para aplicar los cambios se reinicia Apache:
 
@@ -57,7 +57,7 @@ Para aplicar los cambios se reinicia Apache:
 sudo systemctl restart apache2
 ```
 
-!\[Reinicio de Apache](img/03-restart-apache.png)
+![Reinicio de Apache](img/03-restart-apache.png)
 
 ## 5\. Verificación del funcionamiento de PHP
 
@@ -73,13 +73,13 @@ phpinfo();
 ?>
 ```
 
-!\[Fichero de prueba info.php](img/04-info-php-nano.png)
+![Fichero de prueba info.php](img/04-info-php-nano.png)
 
-Al abrir `http://<IP\\\\\\\_PUBLICA>/info.php` en el navegador se muestra la página de información de PHP, lo que confirma que Apache entrega el contenido ya procesado: PHP 8.3.6 con el manejador *Apache 2.0 Handler* y las extensiones de MySQL cargadas (`mysqli`, `mysqlnd`, `pdo\\\\\\\_mysql`).
+Al abrir `http://<IP_PUBLICA>/info.php` en el navegador se muestra la página de información de PHP, lo que confirma que Apache entrega el contenido ya procesado: PHP 8.3.6 con el manejador *Apache 2.0 Handler* y las extensiones de MySQL cargadas (`mysqli`, `mysqlnd`, `pdo_mysql`).
 
-!\[Página phpinfo en el navegador](img/05-info-php-navegador.png)
+![Página phpinfo en el navegador](img/05-info-php-navegador.png)
 
-> El fichero `info.php` expone información interna del servidor. Es solo una prueba y \\\\\\\*\\\\\\\*debe eliminarse\\\\\\\*\\\\\\\* una vez verificado:
+> El fichero `info.php` expone información interna del servidor. Es solo una prueba y **debe eliminarse** una vez verificado:
 > ```bash
 > sudo rm /var/www/html/info.php
 > ```
@@ -89,7 +89,7 @@ Al abrir `http://<IP\\\\\\\_PUBLICA>/info.php` en el navegador se muestra la pá
 |Criterio|Objetivo|Cómo se comprueba|
 |-|-|-|
 |Servicio web activo|Apache en estado `active (running)` y habilitado al arranque|`systemctl status apache2`|
-|Disponibilidad HTTP|El servidor responde en el puerto 80|Acceso desde navegador a `http://<IP\\\\\\\_PUBLICA>`|
+|Disponibilidad HTTP|El servidor responde en el puerto 80|Acceso desde navegador a `http://<IP_PUBLICA>`|
 |Procesamiento de PHP|Los ficheros `.php` se ejecutan en el servidor|Prueba con `phpinfo()`|
 |Uso de recursos|Memoria por debajo del 50 % y carga del sistema por debajo de 1.0|Resumen de recursos al iniciar sesión por SSH|
 
@@ -120,7 +120,7 @@ Al abrir `http://<IP\\\\\\\_PUBLICA>/info.php` en el navegador se muestra la pá
 
 **Mantenimiento recomendado:**
 
-* Mantener el sistema actualizado con `sudo apt update \\\\\\\&\\\\\\\& sudo apt upgrade`.
+* Mantener el sistema actualizado con `sudo apt update && sudo apt upgrade`.
 * Comprobar de forma periódica que el servicio está activo con `systemctl status apache2`.
 * No dejar ficheros de prueba en el directorio web.
 
