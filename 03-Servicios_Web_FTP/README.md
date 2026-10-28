@@ -1,7 +1,9 @@
 # 03 - Servicios Web · Proyecto P0.0 EducaBCN
 
-**Grupo:** G06 · ASIX c2gA
+**Grupo:** G06 · ASIXc 2A
+
 **Equipo:** Leonel Coello · Oussama Boukhali
+
 **Contenido:** Sprint 1 · Servidor web Apache y entorno PHP
 
 \---
