@@ -35,7 +35,7 @@ Se instala Apache desde los repositorios oficiales de Ubuntu:
 sudo apt install apache2 -y
 ```
 
-!\[Instalación de Apache](img/01-apache-instalacion.png)
+![Instalación de Apache](img/01-apache-instalacion.png)
 
 El puerto 80 ya está permitido en el Security Group de la instancia (ver `01-InfraestructuraRed`), por lo que el servidor es accesible desde `http://<IP\\\\\\\_PUBLICA>`.
 
