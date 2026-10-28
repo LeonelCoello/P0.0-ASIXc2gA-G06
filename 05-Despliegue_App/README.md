@@ -1,10 +1,12 @@
 # 05 - Despliegue de la Aplicación · Proyecto P0.0 EducaBCN
 
-**Grupo:** G06 · ASIX c2gA
+**Grupo:** G06 · ASIXc 2A
+
 **Equipo:** Leonel Coello · Oussama Boukhali
+
 **Contenido:** Sprint 1 · Primera versión de la aplicación web que consulta los centros educativos
 
----
+
 
 ## 1. Alcance de este documento
 
@@ -189,8 +191,3 @@ sudo systemctl status apache2 mysql           # estado de los servicios
 
 **Dependencias de esta fase:** Apache y PHP con `php-mysql` (`03-Servicios_Web_FTP`) y la base de datos cargada (`04-Servicios_Base_Datos`).
 
-## 12. Siguientes pasos
-
-- Mover las credenciales a un fichero de configuración y reducir privilegios.
-- Añadir paginación y filtros por distrito y barrio.
-- Separar la aplicación y la base de datos en instancias distintas.
