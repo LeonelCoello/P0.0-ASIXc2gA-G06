@@ -1,0 +1,14 @@
+# Nunca publicar claves o credenciales
+*.pem
+*.key
+*.p12
+*.pfx
+.env
+.env.*
+!.env.example
+*secret*
+*credentials*
+config/educabcn.conf
+/backups/
+*.sql.gz
+*:Zone.Identifier
