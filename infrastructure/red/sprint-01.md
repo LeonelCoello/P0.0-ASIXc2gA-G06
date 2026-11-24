@@ -1,67 +1,51 @@
-# Infraestructura de red: Sprint 1
+# Infraestructura y red: Sprint 1
 
-## Índice
+La primera versión de EducaBCN se implantó sobre una única instancia de Amazon EC2 con Ubuntu Server 24.04 LTS. Se centralizaron Apache, PHP, MySQL y el portal para demostrar el flujo completo antes de distribuir los servicios. El procedimiento se describe cronológicamente; las imágenes son capturas reales de la documentación del equipo.
 
-- [Contexto](#contexto)
-- [1. Crear la instancia](#1-crear-la-instancia)
-- [2. Reglas de acceso](#2-reglas-de-acceso)
-- [3. Acceso SSH y cuentas](#3-acceso-ssh-y-cuentas)
-- [4. Organización del trabajo](#4-organizacion-del-trabajo)
-- [5. Resultado](#5-resultado)
+## Organización del repositorio y del trabajo
 
+El equipo utilizó ProofHub para asignar actividades y GitHub como repositorio de código y documentación. La estructura inicial distribuía las evidencias por redes, servicios, bases de datos y aplicación. La planificación empezó con la definición del backlog y la asignación de responsabilidades.
 
-## Contexto
+![Captura original del documento técnico: fuente p09 estructura inicial del repositorio](../../media/sprint-01/fuente-p09-estructura-inicial-del-repositorio.png)
 
-La primera versión de EducaBCN se construyó en una sola instancia EC2 con Ubuntu Server 24.04 LTS. El servidor alojaba Apache, PHP, MySQL y los archivos de la aplicación. Esta configuración permitió validar el conjunto de datos y el portal antes de separar responsabilidades.
+![Captura original del documento técnico: fuente p10 tablero de planificaci n](../../media/sprint-01/fuente-p10-tablero-de-planificaci-n.png)
 
-## 1. Crear la instancia
+## Creación de la instancia AWS EC2
 
-En la consola de EC2 se seleccionó una AMI Ubuntu Server, se asignó un nombre de instancia y se definió el par de claves. La elección de una instancia Linux permitió administrar el sistema con comandos y `systemd`.
+Se inició una instancia virtual con Ubuntu Server 24.04 LTS. Se configuró su grupo de seguridad para habilitar los accesos necesarios durante el laboratorio y se vinculó un par de claves para el primer acceso administrativo. Es necesario conservar el identificador de la instancia y del grupo de seguridad en un inventario privado, sin publicar claves privadas ni contraseñas.
 
-![Selección de Ubuntu Server y nombre de instancia EC2](../../media/sprint-01/p12_01.png)
-
-*Selección de Ubuntu Server y nombre de instancia EC2.*
-
-## 2. Reglas de acceso
-
-Se prepararon las opciones de conectividad y los Security Groups de AWS. Para el despliegue se requirió SSH administrativo y acceso HTTP de prueba al portal. Las reglas concretas deben revisarse en la consola antes de exponer un puerto; permitir SSH desde cualquier origen no es una configuración recomendable para un uso permanente.
-
-![Configuración inicial de acceso a la instancia AWS](../../media/sprint-01/p13_01.png)
-
-*Configuración inicial de acceso a la instancia AWS.*
-
-## 3. Acceso SSH y cuentas
-
-Se utilizó un par de claves de AWS para establecer una sesión SSH con la instancia. Posteriormente se creó una cuenta Linux `bchecker`, a la que se dieron permisos de `sudo` y se habilitó la autenticación mediante contraseña para realizar pruebas. Este usuario Linux no debe confundirse con la cuenta MySQL que aparece con el mismo nombre.
+Comprobaciones útiles tras el arranque:
 
 ```bash
-sudo adduser bchecker
-sudo usermod -aG sudo bchecker
-sudo systemctl restart ssh
+hostnamectl
+lsb_release -a
+ip -brief address
+ip route
+sudo systemctl status ssh
 ```
 
-![Alta del usuario en el grupo sudo](../../media/sprint-01/p18_02.png)
+Estas comprobaciones permiten distinguir errores del sistema operativo, de la interfaz de red y del acceso remoto.
 
-*Alta del usuario en el grupo sudo.*
+![Captura original del documento técnico: fuente p11 creaci n de instancia ec2](../../media/sprint-01/fuente-p11-creaci-n-de-instancia-ec2.png)
 
-![Configuración histórica de autenticación SSH por contraseña](../../media/sprint-01/p18_03.png)
+## Acceso SSH y cuentas de administración
 
-*Configuración histórica de autenticación SSH por contraseña.*
+En el Sprint 1 se accedió inicialmente a la instancia con una clave PEM y después se habilitó también la autenticación SSH por contraseña para las comprobaciones del laboratorio. Se creó la cuenta de Linux `bchecker` y se le concedieron privilegios administrativos mediante `sudo`. Esto describe la configuración efectivamente documentada, no una práctica recomendada para un entorno expuesto a Internet. La cuenta Linux `bchecker` no debe confundirse con el usuario SQL del mismo nombre. En el diseño de seguridad se recomienda usar claves personales y separar cuentas administrativas de cuentas de servicio; no hay constancia de que la autenticación por contraseña ya se haya deshabilitado.
 
-La imagen acredita la configuración realizada, no que el acceso por contraseña sea la opción más segura. Se recomienda limitar SSH a administradores y direcciones autorizadas, preferentemente con claves.
+```bash
+whoami
+id
+sudo systemctl status ssh
+sudo getent group sudo
+```
 
-## 4. Organización del trabajo
+Para documentar el acceso basta con registrar el procedimiento y una captura sin revelar nombres de claves privadas ni material secreto.
 
-El equipo creó su repositorio en GitHub y utilizó ProofHub para registrar los hitos del despliegue. Esta estructura permitió relacionar la instalación con los cambios publicados.
 
-![Estructura inicial del repositorio GitHub](../../media/sprint-01/p17_01.png)
+## Validación de la infraestructura monolítica
 
-*Estructura inicial del repositorio GitHub.*
+Con la instancia preparada se instalaron los servicios del prototipo. La validación del Sprint 1 consistió en consultar los centros educativos desde el navegador y confirmar que el portal obtenía los datos del MySQL local. El resultado obtenido confirma la viabilidad del prototipo; no equivale a pruebas de alta disponibilidad.
 
-![Tablero de tareas de ProofHub durante el despliegue](../../media/sprint-01/p20_01.png)
+![Captura original del documento técnico: fuente p15 comprobaci n del control de versiones](../../media/sprint-01/fuente-p15-comprobaci-n-del-control-de-versiones.png)
 
-*Tablero de tareas de ProofHub durante el despliegue.*
-
-## 5. Resultado
-
-La instancia de la primera fase sirvió de entorno integrado. En la fase posterior se reutilizó como servidor de base de datos B-NCC, desactivando Apache para que dejara de servir la web.
+![Captura original del documento técnico: fuente p31 vista inicial de educabcn](../../media/sprint-01/fuente-p31-vista-inicial-de-educabcn.png)

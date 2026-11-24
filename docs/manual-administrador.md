@@ -1,351 +1,342 @@
 # Manual de administración de EducaBCN
 
-## Índice
+## 1. Propósito y público
 
-- [1. Alcance del manual](#1-alcance-del-manual)
-- [2. Inventario de infraestructura](#2-inventario-de-infraestructura)
-- [3. Gestión de instancias AWS](#3-gestion-de-instancias-aws)
-- [4. Acceso SSH y cuentas Linux](#4-acceso-ssh-y-cuentas-linux)
-- [5. W-NCC: servicio web](#5-w-ncc-servicio-web)
-- [6. B-NCC: administración de MySQL](#6-b-ncc-administracion-de-mysql)
-- [7. F-NCC: administración de FTP](#7-f-ncc-administracion-de-ftp)
-- [8. F-NCC: administración de DNS](#8-f-ncc-administracion-de-dns)
-- [9. F-NCC: administración de DHCP](#9-f-ncc-administracion-de-dhcp)
-- [10. Incidencias frecuentes](#10-incidencias-frecuentes)
-- [11. Mantenimiento y registro](#11-mantenimiento-y-registro)
-- [12. Recuperación](#12-recuperacion)
-- [13. Procedimientos de instalación detallados](#13-procedimientos-de-instalacion-detallados)
-- [14. Lista de comprobación antes de cerrar una sesión](#14-lista-de-comprobacion-antes-de-cerrar-una-sesion)
-- [15. Administración de la cuenta de validación](#15-administracion-de-la-cuenta-de-validacion)
-- [16. Control de cambios y verificación tras modificaciones](#16-control-de-cambios-y-verificacion-tras-modificaciones)
-- [17. Documentación técnica detallada](#17-documentacion-tecnica-detallada)
+Este manual está dirigido a las personas encargadas de operar EducaBCN. Recoge el inventario de servidores, las tareas de operación habitual, los pasos de comprobación, la gestión de accesos y el diagnóstico de incidencias a partir del despliegue documentado. Los procedimientos históricos paso a paso y sus capturas se encuentran enlazados en cada sección. Las claves, contraseñas y direcciones efímeras no forman parte de la documentación pública.
 
+## 2. Arquitectura del entorno documentado
 
-## 1. Alcance del manual
+Durante el primer sprint se utilizó una instancia única que concentraba Apache, PHP, MySQL y el portal. En el segundo sprint se comenzó su separación en nodos con funciones concretas:
 
-Este manual describe la operación de la infraestructura distribuida observada tras el segundo sprint. Su finalidad es permitir a otra persona identificar los nodos, consultar servicios, comprobar la aplicación, diagnosticar problemas y realizar actuaciones controladas sin depender de quien instaló el sistema.
-
-No sustituye los procedimientos de instalación detallados de `infrastructure/`, a los que remite desde cada sección. Se refiere únicamente a los servicios y actividades registrados en los dos primeros sprints.
-
-## 2. Inventario de infraestructura
-
-| Servidor | IP privada del documento | Servicios |
+| Equipo | Función | Componentes |
 |---|---|---|
-| W-NCC | `172.31.31.159` | Apache, PHP, aplicación EducaBCN |
-| B-NCC | `172.31.39.133` | MySQL 8.0, tabla de centros |
-| F-NCC | `172.31.16.170` | vsftpd, BIND9, ISC DHCP |
+| W-NCC | Aplicación web | Apache, PHP, PDO y cliente MySQL |
+| B-NCC | Persistencia | MySQL Server y datos EducaBCN |
+| F-NCC | Transferencias | vsftpd y usuarios de transferencia |
 
-Los valores pertenecen al entorno mostrado. Antes de intervenir en una instancia recreada, confirmar la IP privada y el Security Group desde AWS EC2.
+BIND9 e ISC DHCP también aparecen en la documentación técnica. El diagrama de arquitectura de diseño no debe confundirse con una certificación de que todas sus zonas y controles están desplegados.
 
-## 3. Gestión de instancias AWS
+La evolución y los procedimientos utilizados se encuentran en [red de Sprint 1](../infrastructure/red/sprint-01.md) y [red de Sprint 2](../infrastructure/red/sprint-02.md).
 
-1. Acceder a la consola EC2 con una identidad autorizada.
-2. Identificar la instancia por nombre y región y consultar sus estados y direcciones.
-3. Revisar las interfaces, la VPC, las subredes y los Security Groups de cada instancia.
-4. Evitar editar reglas públicas sin evaluar qué servicio quedará expuesto.
-5. Antes de detener o sustituir una instancia, comprobar si hay datos o procesos sin persistir.
+### Alcance de las comprobaciones documentadas
 
-![Instancia W-NCC creada en la consola EC2](../media/sprint-02/p33_01.png)
+Las capturas muestran instalaciones, estados de servicios y consultas concretas. No prueban por sí mismas que el FTP esté cifrado, que el DHCP de ISC asigne direcciones a instancias AWS, que el puerto MySQL sea inaccesible desde cualquier origen no autorizado o que el modelo relacional propuesto esté desplegado. Estas cuestiones no se presentan como hechos verificados.
 
-*Instancia W-NCC creada en la consola EC2.*
 
-![Instancia F-NCC creada en AWS](../media/sprint-02/p36_01.png)
+## 3. Acceso a instancias AWS EC2
 
-*Instancia F-NCC creada en AWS.*
+### 3.1. Localizar la instancia correcta
 
-El puerto 22 es para SSH administrativo, 80 para HTTP de prueba, 3306 para MySQL entre servidores y 21 para FTP de control. No deben abrirse estos puertos indiscriminadamente al público. Los puertos de FTP pasivo deben coincidir con el rango configurado en vsftpd y en el Security Group.
+En AWS EC2 identificar el nodo por su nombre y etiquetas antes de ejecutar cambios. Comprobar el estado de la instancia, su grupo de seguridad, su IP privada y el volumen de almacenamiento. La IP pública puede variar con el ciclo de vida de la instancia; no debe darse por permanente sin un recurso específico configurado.
 
-## 4. Acceso SSH y cuentas Linux
+### 3.2. Acceso SSH
 
-Las cuentas documentadas incluyen `web_admin`, `bdd_admin`, `ftp_admin` y, en distintas instancias, `bchecker`. El acceso inicial se realizó con las claves de EC2 y algunas sesiones posteriores por contraseña. Una cuenta Linux y una cuenta MySQL con el mismo nombre son identidades distintas.
-
-Comandos útiles de diagnóstico de cuenta y de red:
+Para nuevas conexiones administrativas se recomienda utilizar una clave personal autorizada y el usuario de la instancia. Históricamente, el Sprint 1 también habilitó SSH por contraseña; el siguiente ejemplo muestra el método por clave sin afirmar que el acceso por contraseña se haya desactivado:
 
 ```bash
-whoami
-hostnamectl
-ip -br address
-id web_admin
-sudo systemctl status ssh
+ssh -i RUTA_CLAVE USUARIO@HOST
 ```
 
-La consulta `id web_admin` debe ejecutarse en el nodo que tenga creada esa cuenta; en los demás fallará sin significar una avería. La administración debe limitarse a personal autorizado y no debe exigir compartir contraseñas con otros integrantes.
+No pegar claves privadas en GitHub ni adjuntarlas a incidencias. Cada usuario administrativo debe disponer de identidad propia. Revisar que el grupo de seguridad admita SSH solo desde los orígenes autorizados.
 
-## 5. W-NCC: servicio web
+### 3.3. Identificación del nodo
 
-### 5.1 Comprobar Apache y PHP
+```bash
+hostnamectl
+ip -brief address
+ip route
+whoami
+id
+```
+
+Comparar el hostname y la dirección con el inventario interno antes de reiniciar servicios.
+
+## 4. Gestión de cuentas y permisos
+
+En el Sprint 1 el usuario Linux `bchecker` recibió permisos administrativos; también se utilizó el nombre `bchecker` para una cuenta SQL del prototipo. No son una única identidad ni tienen necesariamente los mismos privilegios. En el Sprint 2 se documenta la creación de administradores específicos y de `webapp` como usuario SQL para la conexión remota. El criterio recomendado para la operación posterior es reservar `sudo` a administradores y separar las cuentas de servicio de las cuentas de administración. Esta separación se propone como política, sin afirmar que ya se haya aplicado retroactivamente a todos los usuarios.
+
+```bash
+getent passwd
+getent group sudo
+id USUARIO
+sudo -l -U USUARIO
+```
+
+Para un usuario de transferencia, definir la carpeta inicial y los permisos del directorio. En MySQL del Sprint 2 se creó `webapp` con host `%` y posteriormente se restringieron sus privilegios a lectura según el procedimiento original. El host `%` no restringe el origen al servidor W-NCC; las restricciones reales dependen además de los Security Groups. Para una cuenta SQL se recomienda limitar `host`, base de datos y permisos y verificar lo aplicado con `SHOW GRANTS`.
+
+## 5. Servidor web W-NCC
+
+### 5.1. Verificar disponibilidad
 
 ```bash
 sudo systemctl status apache2
-apache2ctl -t
-php -v
-php -m | grep -E '^pdo_mysql$|^mysqli$'
-ls -la /var/www/html/
+sudo apache2ctl configtest
+curl -I http://127.0.0.1/
 ```
 
-El directorio web contiene `index.php` y los archivos utilizados por la aplicación. Una comprobación de sintaxis permite detectar errores tras un cambio:
+`systemctl` confirma el estado del proceso, `configtest` valida la sintaxis y `curl` comprueba que Apache responde por HTTP. Una respuesta HTTP no demuestra por sí sola que la base de datos sea accesible.
 
-```bash
-php -l /var/www/html/index.php
-```
-
-Si hay problemas, revisar:
+### 5.2. Registros y diagnóstico
 
 ```bash
 sudo journalctl -u apache2 -n 50 --no-pager
 sudo tail -n 50 /var/log/apache2/error.log
+sudo ss -ltnp
 ```
 
-![Instalación de componentes Apache y PHP en W-NCC](../media/sprint-02/p39_01.png)
+Ante una respuesta 500, revisar primero el error de Apache/PHP y después conectividad SQL. Ante una ausencia de respuesta, comprobar el grupo de seguridad de EC2 y las reglas del sistema operativo.
 
-*Instalación de componentes Apache y PHP en W-NCC.*
+### 5.3. Despliegue de código
 
-### 5.2 Despliegue de la aplicación
+Versionar los archivos fuente en GitHub y desplegar únicamente revisiones identificables. Comprobar la integridad de `index.php` y los permisos de lectura del usuario Apache. No incluir en el repositorio el fichero de secretos de la aplicación.
 
-En la migración documentada se copiaron archivos por SSH directamente desde B-NCC. Este procedimiento histórico sirve para entender el cambio, no debe repetirse indiscriminadamente sobre una versión más reciente.
+Los pasos originales se documentan en [web de Sprint 1](../infrastructure/web-ftp/sprint-01.md), [migración de Sprint 2](../infrastructure/web-ftp/sprint-02.md) y [aplicación](../infrastructure/aplicacion/sprint-02.md).
 
-```bash
-mkdir -p /tmp/app
-scp -r bdd_admin@172.31.39.133:/var/www/html/. /tmp/app/
-sudo cp -a /tmp/app/. /var/www/html/
-sudo rm -f /var/www/html/index.html
-```
+## 6. Base de datos B-NCC
 
-![Copia de archivos y despliegue en W-NCC](../media/sprint-02/p40_03.png)
-
-*Copia de archivos y despliegue en W-NCC.*
-
-Para futuros despliegues conviene conservar una copia de los archivos existentes, comparar cambios y probar en un entorno no público antes de sustituir `index.php`.
-
-### 5.3 Configuración de acceso MySQL desde PHP
-
-El servidor de datos no se encuentra en `localhost`, sino en B-NCC. El código debe tomar el host y el usuario de la configuración vigente. El usuario remoto de la fase distribuida es `webapp`.
-
-La documentación registra la separación de credenciales a `/etc/educabcn.conf`, fuera de la carpeta pública. Antes de asumir que se utiliza ese archivo, comprobar que `index.php` lo lee efectivamente.
-
-```bash
-sudo stat /etc/educabcn.conf
-sudo grep -nE 'localhost|new PDO|mysqli_connect|educabcn.conf' /var/www/html/index.php
-```
-
-**No imprimir el contenido del archivo de credenciales en una captura pública.** Los permisos documentados son `root:www-data` y `640`.
-
-![Propiedad y permisos del archivo de configuración](../media/sprint-02/p40_02.png)
-
-*Propiedad y permisos del archivo de configuración.*
-
-### 5.4 Comprobar el portal
-
-Realizar una petición local y otra desde el navegador usando la dirección publicada. Si se muestra el listado, confirmar que corresponde a B-NCC revisando también la conexión de red y el usuario MySQL empleado.
-
-```bash
-curl -I http://127.0.0.1/index.php
-nc -zv 172.31.39.133 3306
-```
-
-![Listado de centros educativos observado desde W-NCC](../media/sprint-02/p41_01.png)
-
-*Listado de centros educativos observado desde W-NCC.*
-
-## 6. B-NCC: administración de MySQL
-
-### 6.1 Estado del servidor
+### 6.1. Estado de MySQL
 
 ```bash
 sudo systemctl status mysql
 sudo journalctl -u mysql -n 50 --no-pager
+sudo ss -ltnp | grep 3306
 ```
 
-En el segundo sprint se reutilizó la máquina de la primera fase y se detuvo Apache:
+En el despliegue distribuido, MySQL debe admitir conexiones privadas necesarias desde W-NCC, no conexiones arbitrarias desde Internet.
 
-![Apache desactivado en B-NCC tras la separación de servicios](../media/sprint-02/p42_02.png)
-
-*Apache desactivado en B-NCC tras la separación de servicios.*
-
-### 6.2 Comprobar los datos
-
-Desde un usuario MySQL con permisos de lectura:
+### 6.2. Comprobación de las tablas
 
 ```sql
 USE EducaBCN;
+SHOW TABLES;
 SELECT COUNT(*) FROM centros_educativos;
-SELECT id, nombre, distrito, barrio, direccion, telefono
-FROM centros_educativos LIMIT 5;
+SELECT * FROM centros_educativos LIMIT 5;
 ```
 
-La importación inicial registró 2.710 filas, cifra que puede variar si el dataset se modifica después.
+Verificar que los resultados conservan la codificación de tildes y caracteres especiales. Para la carga inicial se registraron 2.710 filas; si el catálogo cambia, el recuento debe contrastarse con la fecha y versión de la fuente de datos, no suponerse fijo.
 
-![Comprobaciones sobre la tabla de centros](../media/sprint-01/p28_01.png)
+### 6.3. Acceso remoto desde W-NCC
 
-*Comprobaciones sobre la tabla de centros.*
+```bash
+nc -vz HOST_B_NCC 3306
+mysql -h HOST_B_NCC -u USUARIO_LECTURA -p
+```
 
-### 6.3 Conexiones remotas y permisos
+No incluir la contraseña en la línea de comandos. Una conexión TCP correcta puede coexistir con un error de credenciales, y el acceso SQL puede ser correcto aunque la aplicación falle por otro motivo.
 
-El archivo de configuración de MySQL documenta `bind-address=0.0.0.0`, lo que facilita conexiones remotas pero obliga a mantener restricciones de red. La aplicación utiliza el usuario de MySQL `webapp`, distinto de las cuentas Linux de administración. Sus permisos registrados permiten consultar datos, no modificarlos.
+### 6.4. Permisos mínimos
 
-![Servidor MySQL configurado para escuchar fuera de localhost](../media/sprint-02/p42_03.png)
+El usuario de la aplicación debe poder consultar solo las tablas necesarias. Evitar permisos de superusuario, ALTER, DROP y escritura cuando solo se requiere leer el catálogo. Registrar los cambios de privilegios bajo una cuenta administrativa SQL separada.
 
-*Servidor MySQL configurado para escuchar fuera de localhost.*
+El procedimiento original está detallado en [MySQL Sprint 1](../infrastructure/base-datos/sprint-01.md) y [MySQL Sprint 2](../infrastructure/base-datos/sprint-02.md).
 
-![Permisos de lectura de la cuenta webapp](../media/sprint-02/p43_02.png)
+## 7. Gestión de datos OpenData BCN
 
-*Permisos de lectura de la cuenta webapp.*
+El origen de datos utilizado es el catálogo de equipamientos educativos de OpenData BCN. Antes de sustituir los datos hay que registrar el fichero descargado, su fecha, formato de texto, delimitadores y cabeceras. Se recomienda importar a una tabla intermedia antes de actualizar las tablas públicas.
 
-Antes de cambiar permisos de usuarios hay que comprobar el origen, la función requerida y el conjunto de privilegios mínimo. Nunca almacenar contraseñas en el código publicado.
+Flujo de operación:
 
-## 7. F-NCC: administración de FTP
+1. Descargar el archivo desde la fuente oficial y conservar una copia original.
+2. Revisar la codificación del CSV y su estructura de columnas.
+3. Comprobar recuento, duplicados y valores vacíos en el entorno de importación.
+4. Aplicar la carga y consultar una muestra representativa.
+5. Abrir EducaBCN y contrastar su vista con los resultados SQL.
 
-### 7.1 Servicio y cuentas
+No ejecutar importaciones destructivas sobre las tablas activas sin respaldo verificado.
+
+## 8. Servicio FTP F-NCC
+
+### 8.1. Estado y configuración
 
 ```bash
 sudo systemctl status vsftpd
 sudo journalctl -u vsftpd -n 50 --no-pager
+sudo grep -E '^(anonymous_enable|local_enable|write_enable|chroot_local_user)' /etc/vsftpd.conf
 ```
 
-El equipo preparó un usuario de transferencia `ftpuser` y un directorio `ftp/subida`. La cuenta administrador del sistema es `ftp_admin`.
+Se documentaron usuarios de transferencia y directorios restringidos. Comprobar que la cuenta utilizada solo puede acceder a su ámbito autorizado y no a rutas del sistema.
 
-![Estado de vsftpd](../media/sprint-02/p44_02.png)
+### 8.2. Transferencias y seguridad
 
-*Estado de vsftpd.*
+Las capturas del laboratorio muestran vsftpd operativo, usuarios y directorios con `chroot`; no demuestran que FTPS o SFTP estén habilitados. `chroot` no cifra la transferencia. Las sesiones FTP sin cifrar no deben utilizarse con credenciales o documentos sensibles. Como medida de seguridad recomendada, antes de un uso real con esos archivos debe configurarse y probarse FTPS o SFTP, además de limitar los orígenes de acceso en AWS.
 
-![Directorios y permisos del usuario de transferencia](../media/sprint-02/p45_02.png)
+### 8.3. Diagnóstico
 
-*Directorios y permisos del usuario de transferencia.*
+Si un cliente no conecta, comprobar el estado de vsftpd, el puerto y la ruta de red. Si el login funciona pero la subida falla, inspeccionar permisos del directorio y restricciones de `chroot`. En modo pasivo, las reglas de firewall deben coincidir con el rango definido en la configuración.
 
-### 7.2 Configuración
+Consultar [procedimiento del servidor FTP](../infrastructure/web-ftp/sprint-02.md).
 
-Los cambios se realizan sobre `/etc/vsftpd.conf`; antes de editar se debe conservar una copia. El documento original recoge acceso local, ausencia de usuarios anónimos, escritura y chroot.
+## 9. DNS y DHCP
 
-![Opciones de seguridad y modo pasivo de vsftpd](../media/sprint-02/p46_01.png)
-
-*Opciones de seguridad y modo pasivo de vsftpd.*
-
-El protocolo FTP utilizado en la prueba no acredita cifrado. No usar transferencias sin protección para documentación privada o datos sensibles.
-
-### 7.3 Diagnóstico
-
-Si falla una transferencia, comprobar que el servicio está activo, que el usuario tiene permisos en su subdirectorio y que el rango pasivo coincide con las reglas del Security Group. Una conexión exitosa al puerto 21 por sí sola no demuestra que la subida funcione.
-
-![Sesión de prueba del servicio FTP](../media/sprint-02/p46_03.png)
-
-*Sesión de prueba del servicio FTP.*
-
-## 8. F-NCC: administración de DNS
-
-BIND9 ofrece la zona interna `educabcn.local`. Su archivo de zona contiene registros para `web`, `db` y `ftp` con las direcciones privadas de las instancias.
+### 9.1. DNS BIND9
 
 ```bash
-sudo named-checkconf
-sudo named-checkzone educabcn.local /etc/bind/db.educabcn.local
 sudo systemctl status bind9
+sudo named-checkconf
+dig @HOST_DNS web.educabcn.local
 ```
 
-![Zona local con registros A de los nodos](../media/sprint-02/p48_01.png)
+Si la resolución no funciona, comprobar primero la zona y el servicio DNS, después que el cliente use el resolver apropiado y finalmente el acceso de red al puerto 53. El nombre consultado debe existir en el archivo de zona y apuntar a la IP privada prevista.
 
-*Zona local con registros A de los nodos.*
-
-Para validar desde F-NCC:
-
-```bash
-dig @127.0.0.1 db.educabcn.local
-```
-
-Para comprobar una resolución desde otra instancia usando el DNS de F-NCC:
-
-```bash
-nslookup db.educabcn.local 172.31.16.170
-```
-
-![Resolución y comprobación desde W-NCC](../media/sprint-02/p51_02.png)
-
-*Resolución y comprobación desde W-NCC.*
-
-Si no responde, distinguir un error del demonio de un problema de resolución del sistema, firewall, Security Groups o dirección DNS configurada en el cliente.
-
-## 9. F-NCC: administración de DHCP
-
-El demonio ISC DHCP aparece instalado y con estado activo. La configuración reside en `/etc/dhcp/dhcpd.conf` y la interfaz en `/etc/default/isc-dhcp-server`.
+### 9.2. DHCP
 
 ```bash
 sudo systemctl status isc-dhcp-server
+cat /etc/default/isc-dhcp-server
 sudo journalctl -u isc-dhcp-server -n 50 --no-pager
 ```
 
-![Configuración visible de DHCP](../media/sprint-02/p50_01.png)
+Se documentan la instalación de ISC DHCP Server y la comprobación del proceso, pero no una concesión DHCP entregada por este servidor a un cliente. AWS proporciona el mecanismo DHCP de las instancias EC2 en la VPC; por ello no se debe afirmar que ISC DHCP esté asignando las direcciones de esas instancias. La descripción se refiere al servicio instalado en el laboratorio.
 
-*Configuración visible de DHCP.*
+Ver [procedimiento DNS/DHCP](../infrastructure/dns-dhcp/sprint-02.md) con capturas originales de instalación y consultas.
 
-![Estado de ISC DHCP en F-NCC](../media/sprint-02/p50_02.png)
+## 10. Configuración de la aplicación y secretos
 
-*Estado de ISC DHCP en F-NCC.*
-
-**Alcance:** el estado activo del demonio no demuestra que las instancias EC2 reciban concesiones desde este servicio. AWS controla normalmente las opciones DHCP de su VPC. Para una prueba de concesiones se debe utilizar una topología de laboratorio compatible y registrar el cliente que recibe la IP.
-
-## 10. Incidencias frecuentes
-
-| Síntoma | Comprobaciones útiles | Posibles causas |
-|---|---|---|
-| La web no carga | `systemctl status apache2`, `curl`, Security Group | Apache parado, puerto HTTP bloqueado, URL incorrecta |
-| Web sin datos / error PDO | Host de MySQL, `nc` a 3306, cuenta `webapp` | Host antiguo `localhost`, permisos o credenciales desactualizados |
-| FTP conecta pero no transfiere | Usuario, chroot, rango pasivo, reglas | Permisos del subdirectorio o puertos pasivos filtrados |
-| `nslookup` no encuentra nombre | `named-checkzone`, `dig @DNS` | Zona incorrecta o DNS no configurado en el cliente |
-| DHCP no concede IP | Interfaz, red de clientes y origen del DHCP | El cliente utiliza DHCP de AWS o está en otro segmento |
-
-## 11. Mantenimiento y registro
-
-Después de modificar la configuración de un servicio, verificar la sintaxis cuando exista un comando de validación, aplicar el cambio de manera controlada y comprobar el resultado. Registrar fecha, responsable, archivo editado, motivo y prueba posterior. Antes de operaciones destructivas sobre MySQL, conservar y validar una copia.
-
-## 12. Recuperación
-
-Para incidencias consultar el [plan de contingencia](contingencia.md). Distinguir siempre una prueba ejecutada de un procedimiento preparado para una incidencia futura.
-
-## 13. Procedimientos de instalación detallados
-
-- [Creación y red de EC2](../infrastructure/red/sprint-02.md)
-- [Web en W-NCC](../infrastructure/web/sprint-02.md)
-- [MySQL remoto en B-NCC](../infrastructure/base-datos/sprint-02.md)
-- [vsftpd en F-NCC](../infrastructure/ftp/sprint-02.md)
-- [BIND9 e ISC DHCP](../infrastructure/dns-dhcp/sprint-02.md)
-
-## 14. Lista de comprobación antes de cerrar una sesión
-
-| Elemento | Comprobación | Respuesta ante fallo |
-|---|---|---|
-| Acceso | Hostnames y usuarios administrativos del nodo correcto | Revisar SSH, IP actual y grupos |
-| Apache en W-NCC | Servicio activo y `php -l` sin errores | Revisar `journalctl -u apache2` y código actual |
-| MySQL en B-NCC | Servicio activo, consulta local y acceso controlado desde W-NCC | Revisar SG, `bind-address`, cuenta `webapp` y DNS/IP |
-| FTP en F-NCC | Servicio en ejecución y prueba con usuario autorizado | Revisar `vsftpd.conf`, directorios y puertos |
-| BIND9 en F-NCC | Zona sintácticamente válida y resolución de registros | `named-checkconf`, `named-checkzone` y logs |
-| ISC DHCP en F-NCC | Servicio sin errores | Distinguir estado del daemon de concesiones reales |
-| Documentación | Cambios anotados y capturas sin secretos | Limpiar secretos antes de hacer commit |
-| Costes AWS | Instancias y recursos que seguirán facturando | Revisar EC2, EBS y otras partidas desde Billing |
-
-## 15. Administración de la cuenta de validación
-
-El enunciado requiere que el profesorado pueda verificar el entorno con la cuenta `bchecker`. En cada servidor debe distinguirse su **identidad Linux** de la identidad MySQL `bchecker` de la primera fase y de la cuenta `webapp` utilizada por PHP en el segundo sprint. Las credenciales no se incluyen en este repositorio.
+El acceso PHP a MySQL se separó del código y se colocó en `/etc/educabcn.conf` con permisos restrictivos. La aplicación no debe imprimir contraseñas, trazas de conexión detalladas ni rutas internas en errores visibles al visitante.
 
 ```bash
-id bchecker
-getent passwd bchecker
+sudo stat -c '%U:%G %a %n' /etc/educabcn.conf
+sudo test -r /etc/educabcn.conf && echo 'El administrador puede leer el fichero'
 ```
 
-`id` permite revisar grupos y `getent passwd` comprueba la entrada NSS de la cuenta, sin revelar contraseñas. Si la cuenta existe pero el docente no puede acceder, revisar permisos de SSH, estado de la cuenta y las reglas de acceso con la supervisión del profesorado. No se debe copiar la contraseña en capturas o commits.
+La comprobación de lectura por parte de Apache debe realizarse con el usuario real del proceso sin mostrar el contenido secreto. Nunca publicar un volcado del archivo para demostrar permisos.
 
-## 16. Control de cambios y verificación tras modificaciones
+## 11. Operación y mantenimiento
 
-Antes de editar una configuración, identificar nodo, archivo, estado anterior y forma de recuperación. Mantener el cambio pequeño y comprobar sintaxis si existe un validador (`apache2ctl -t` para Apache, `named-checkconf` para BIND9, `php -l` para PHP). Registrar la actuación y consultar los logs del servicio. Después, comprobar tanto el proceso como el resultado desde otro nodo cuando corresponda.
+### 11.1. Comprobación al iniciar una jornada
 
-El repositorio Git sirve para el código y Markdown versionados. **No** contiene automáticamente todos los archivos reales de `/etc` ni constituye por sí mismo una copia restaurable de toda la instancia. La migración observada en Sprint 2 copió la aplicación por SCP, no mediante `git pull`; un flujo Git de despliegue debe documentarse y verificarse antes de atribuirlo como realizado.
+1. Verificar las instancias EC2 y grupos de seguridad.
+2. Comprobar SSH, Apache, MySQL, vsftpd, BIND9 y DHCP en el nodo correspondiente.
+3. Consultar el portal desde un navegador de prueba.
+4. Ejecutar una consulta SQL de solo lectura y una consulta DNS interna.
+5. Revisar espacio en disco, memoria y eventos relevantes de logs.
+6. Registrar toda incidencia en el tablero de trabajo.
 
-## 17. Documentación técnica detallada
+```bash
+df -h
+free -h
+uptime
+sudo journalctl -p warning -n 30 --no-pager
+```
 
-- [Creación y red del primer servidor](../infrastructure/red/sprint-01.md)
-- [Creación de W-NCC y F-NCC](../infrastructure/red/sprint-02.md)
-- [Apache y PHP inicial](../infrastructure/web/sprint-01.md)
-- [Migración web y cliente MySQL](../infrastructure/web/sprint-02.md)
-- [MySQL y CSV inicial](../infrastructure/base-datos/sprint-01.md)
-- [Usuario `webapp` y conexión remota](../infrastructure/base-datos/sprint-02.md)
-- [FTP en F-NCC](../infrastructure/ftp/sprint-02.md)
-- [DNS y DHCP en F-NCC](../infrastructure/dns-dhcp/sprint-02.md)
-- [Código PHP de referencia para cada sprint](../infrastructure/aplicacion/codigo/README.md)
-- [Criterios y pruebas pendientes](../tests/criterios-rendimiento-disponibilidad.md)
+### 11.2. Actualizaciones
+
+Planificar una ventana de mantenimiento, revisar dependencias antes de actualizar, guardar un respaldo cuando el cambio pueda afectar a datos o disponibilidad y comprobar funcionalidad tras cada reinicio.
+
+```bash
+sudo apt update
+apt list --upgradable
+```
+
+La instalación masiva de actualizaciones debe hacerse únicamente después de evaluar el impacto.
+
+## 12. Tabla de incidencias frecuentes
+
+| Síntoma | Comprobación | Posible intervención |
+|---|---|---|
+| No carga la web | `systemctl status apache2`, `curl`, Security Group | Revisar Apache, puertos y logs |
+| Respuesta HTTP 500 | Logs de Apache/PHP | Revisar error de aplicación y conexión SQL |
+| PHP no consulta MySQL | `nc` puerto 3306, usuario SQL | Revisar red privada, permisos SQL, configuración PDO |
+| DNS no resuelve | `named-checkconf`, `dig` | Corregir zona, resolver o acceso de red |
+| FTP rechaza credenciales | Logs vsftpd, estado de cuenta | Revisar usuario, chroot y permisos |
+| FTP no permite escribir | Permisos de carpeta | Corregir propietario y directorio autorizado |
+| Disco casi lleno | `df -h`, logs | Retirar archivos temporales tras revisión |
+| Instancia inaccesible | Estado EC2, IP, reglas SSH | Revisar red y acceso desde consola AWS |
+
+## 13. Recuperación y continuidad
+
+El [plan de contingencia](plan-contingencia.md) describe escenarios, responsables, prioridades de recuperación y objetivos de tiempo propuestos. **Las pruebas de restauración y los tiempos indicados no se consideran resultados demostrados** hasta que existan sus registros. No ejecutar procedimientos destructivos sin copia verificada ni autorización de la persona responsable.
+
+## 14. Historial técnico y fuentes internas
+
+- [Procedimientos de red](../infrastructure/red/README.md)
+- [Servidor web y FTP](../infrastructure/web-ftp/README.md)
+- [Base de datos](../infrastructure/base-datos/README.md)
+- [Servicios DNS y DHCP](../infrastructure/dns-dhcp/README.md)
+- [Portal PHP](../infrastructure/aplicacion/README.md)
+- [Seguimiento del Sprint 1](../sprints/sprint-01/review.md)
+- [Seguimiento del Sprint 2](../sprints/sprint-02/review.md)
+
+Las capturas se encuentran dentro de los procedimientos de instalación, inmediatamente después del paso que documentan.
+
+## 15. Operación de la infraestructura segmentada (segunda etapa del Sprint 2)
+
+### 15.1. Identificación de nodos y direcciones actuales
+
+El administrador debe distinguir las IP antiguas, preservadas en el registro de la primera etapa, de las direcciones vigentes tras la migración:
+
+| Servidor | Ubicación documentada | IP privada |
+|---|---|---|
+| R-NCC (WAN) | `ens5` / `172.31.100.0/24` | `172.31.100.10` |
+| R-NCC (DMZ) | `ens6` / `172.31.101.0/24` | `172.31.101.254` |
+| R-NCC (Intranet) | `ens7` / `172.31.102.0/24` | `172.31.102.254` |
+| W-NCC | DMZ | `172.31.101.10` |
+| B-NCC | Intranet | `172.31.102.10` |
+| F-NCC | Intranet | `172.31.102.20` |
+
+Las IP de R-NCC se observaron en la interfaz Linux y constan en las pruebas. La puerta de enlace `172.31.102.1` comunicada en B-NCC corresponde al DHCP/routing de AWS y no debe confundirse con la IP de R-NCC.
+
+### 15.2. Administración por salto SSH
+
+Desde el equipo local se configura OpenSSH para acceder primero a la IP pública autorizada de R-NCC y después a las direcciones privadas de los servidores. Se recomienda utilizar `ProxyJump` y conservar todas las claves privadas **solo en el equipo local**, nunca en el router o el repositorio.
+
+```sshconfig
+Host r-ncc
+    HostName IP_PUBLICA_R_NCC
+    User ubuntu
+    IdentityFile RUTA_PRIVADA_DE_LA_CLAVE
+    IdentitiesOnly yes
+
+Host w-ncc
+    HostName 172.31.101.10
+    User ubuntu
+    IdentityFile RUTA_PRIVADA_DE_LA_CLAVE
+    IdentitiesOnly yes
+    ProxyJump r-ncc
+```
+
+Esta configuración es ilustrativa y debe adaptarse a los usuarios y las claves efectivamente autorizados de cada instancia. Evitar subir el archivo de configuración local si incluye datos sensibles.
+
+### 15.3. Comprobar el router antes de intervenir
+
+```bash
+ip -br -4 a
+ip route
+sudo sysctl net.ipv4.ip_forward
+sudo iptables -t nat -L POSTROUTING -n -v
+sudo iptables -L FORWARD -n -v
+```
+
+- Las tres interfaces deben estar levantadas en sus subredes.
+- `net.ipv4.ip_forward` debe devolver `1` para reenviar IPv4.
+- `POSTROUTING` muestra si existe `MASQUERADE` por `ens5`.
+- `FORWARD` muestra la política y contadores; durante las comprobaciones quedó en `ACCEPT` sin reglas adicionales, lo que no equivale a un aislamiento completo.
+
+Antes de cambiar rutas o reglas, conservar una sesión SSH abierta y documentar una forma de recuperación mediante AWS para evitar perder la administración.
+
+### 15.4. Revisar los Security Groups individuales
+
+Los permisos actuales descritos en [firewall](../security/configuracion-accesos.md) no deben confundirse con el antiguo grupo compartido. Los cuatro grupos son `SG-Router-EducaBCN`, `SG-Web-EducaBCN`, `SG-BBDD-EducaBCN` y `SG-FTP-EducaBCN`.
+
+En R-NCC hay que revisar las asociaciones de **cada ENI**, no solo la instancia. Su regla SSH desde `0.0.0.0/0` es una exposición residual; la autenticación por clave reduce el riesgo pero no elimina los intentos de conexión externos. En R-NCC se verificó `PasswordAuthentication no`, `KbdInteractiveAuthentication no` y `PermitRootLogin no`; esto no certifica la misma configuración para todos los nodos.
+
+### 15.5. Verificar las comunicaciones imprescindibles
+
+Desde W-NCC:
+
+```bash
+nc -zv -w 5 172.31.102.10 3306
+nc -zv -w 5 172.31.102.20 21
+nslookup db.educabcn.local 172.31.102.20
+ping -c 4 172.31.102.10
+```
+
+Esperado según las pruebas registradas: MySQL y FTP accesibles a nivel TCP; `db.educabcn.local` resuelve a `172.31.102.10`; no hay respuesta al ping de W-NCC a B-NCC. Desde B-NCC, `curl -4 -I --max-time 10 https://example.com` devolvió `HTTP/2 200`.
+
+### 15.6. Verificar DNS tras cambios de IP
+
+La zona de F-NCC es `/etc/bind/db.educabcn.local`. Se conservan los registros históricos de la primera etapa y se documenta la nueva configuración en [DNS/DHCP del Sprint 2](../infrastructure/dns-dhcp/sprint-02.md). Tras cualquier cambio incrementar el `Serial`, validar con `named-checkzone`, recargar con `rndc reload` y consultar de nuevo desde un cliente. El nombre `db` sí fue observado resolviendo a su IP nueva tras el cambio.
+
+### 15.7. Límites que debe conocer el administrador
+
+Las pruebas no certifican transferencia FTP cifrada, asignación DHCP de AWS por ISC DHCP, rendimiento medido, restauraciones comprobadas ni un filtrado completo por `iptables` entre todas las zonas. F-NCC aparece todavía en Intranet en las evidencias; una reubicación futura requiere replantear las reglas SSH/FTP/DNS y repetir las pruebas. La guía no presenta estas tareas como finalizadas.

@@ -1,63 +1,31 @@
-# Aplicación EducaBCN migrada: Sprint 2
+# Aplicación EducaBCN: cambios del Sprint 2
 
-## Índice
+La aplicación se trasladó a W-NCC para dejar la base de datos en B-NCC. La diferencia central respecto al prototipo es que PHP ya no debe asumir `localhost` como servidor SQL.
 
-- [Objetivo](#objetivo)
-- [Copia del código de la primera versión](#copia-del-codigo-de-la-primera-version)
-- [Código `index.php` provisional del segundo sprint](#codigo-indexphp-provisional-del-segundo-sprint)
-- [Adaptación de la conexión](#adaptacion-de-la-conexion)
-- [Comprobación de funcionamiento](#comprobacion-de-funcionamiento)
-- [Observaciones de implementación](#observaciones-de-implementacion)
+## Preparación del nuevo entorno
 
+Se instalaron Apache, PHP y la extensión para conectar a MySQL. Las pruebas de red y de login SQL se realizaron antes de configurar el acceso de la aplicación. Esta secuencia facilita localizar el origen de los errores: servicio web, conectividad TCP, permisos SQL o código PHP.
 
-## Objetivo
+![Captura original del documento técnico: fuente p38 instalaci n de apache y php en w ncc](../../media/sprint-02/fuente-p38-instalaci-n-de-apache-y-php-en-w-ncc.png)
 
-Mantener el portal PHP funcionando después de separar el servidor de aplicación del servidor de base de datos.
+## Separación de secretos
 
-## Copia del código de la primera versión
-
-Los archivos de la web se trasladaron desde B-NCC a W-NCC usando `scp`, mediante una cuenta autorizada de Linux y la IP privada de la instancia antigua. En W-NCC se copiaron desde `/tmp/app` a la raíz pública de Apache.
+El documento describe el traslado de las credenciales a `/etc/educabcn.conf`, fuera del directorio público y del código versionado. El usuario del servidor web debe poder leer el archivo, pero ningún otro usuario sin privilegios debería acceder a él.
 
 ```bash
-mkdir -p /tmp/app
-scp -r bdd_admin@172.31.39.133:/var/www/html/. /tmp/app/
-sudo cp -a /tmp/app/. /var/www/html/
-sudo rm -f /var/www/html/index.html
+sudo chown root:www-data /etc/educabcn.conf
+sudo chmod 640 /etc/educabcn.conf
+sudo stat -c "%U %G %a" /etc/educabcn.conf
 ```
 
-![Migración de index.php y archivos PHP desde B-NCC a W-NCC](../../media/sprint-02/p40_03.png)
+![Captura original del documento técnico: fuente p39 permisos de archivo de configuraci n](../../media/sprint-02/fuente-p39-permisos-de-archivo-de-configuraci-n.png)
 
-*Migración de index.php y archivos PHP desde B-NCC a W-NCC.*
+## Comprobación técnica
 
-## Código `index.php` provisional del segundo sprint
+El cliente MySQL en W-NCC permite validar las credenciales de acceso remoto sin confundirlas con errores del script PHP. El funcionamiento del portal deberá comprobarse al finalizar cualquier modificación de las tablas o de la configuración de red.
 
-Se incorpora el archivo [index.php provisional del Sprint 2](codigo/sprint-02/index.php), basado en la estructura del Sprint 1 pero apuntando a B-NCC y utilizando el usuario MySQL `webapp`. **No es el código verificado que está actualmente en W-NCC:** el equipo lo reemplazará por el archivo real obtenido en clase. No se ha probado este ejemplo en el servidor de producción.
+## Comprobación del destino MySQL tras segmentar la red
 
-El servidor documenta además un archivo externo `/etc/educabcn.conf` destinado a las credenciales. La plantilla evita incrustarlas, pero usa una variable de entorno para que no se presuponga un formato INI del fichero que todavía no se ha facilitado. Antes de subir el código real, se deberá documentar cómo carga efectivamente esa configuración.
+Durante la primera etapa, la conexión de PHP apuntaba a la IP de B-NCC de entonces (`172.31.39.133`). La infraestructura de red migrada sitúa B-NCC en `172.31.102.10`. La configuración activa de conexión de EducaBCN debe contrastarse con este valor antes de considerar validada la página tras la migración.
 
-## Adaptación de la conexión
-
-En el primer prototipo PHP conectaba a `localhost`. En la versión distribuida, la IP de MySQL se refiere a B-NCC, `172.31.39.133`. El usuario de consulta remota es `webapp` y tiene permisos documentados de lectura sobre la base `EducaBCN`.
-
-La documentación del equipo incluye el uso de `/etc/educabcn.conf` para guardar los datos de conexión fuera de `/var/www/html/`. La contraseña debe permanecer fuera de Git y de las capturas públicas. La sintaxis concreta de lectura depende de la implementación PHP que se despliegue: no basta con crear el archivo si `index.php` no lo lee.
-
-![Protección del archivo de configuración del portal](../../media/sprint-02/p40_02.png)
-
-*Protección del archivo de configuración del portal.*
-
-## Comprobación de funcionamiento
-
-La captura actualizada muestra el portal servido desde la nueva instancia y el listado de centros de Barcelona.
-
-![Resultado visible del portal EducaBCN después de la migración](../../media/sprint-02/p41_01.png)
-
-*Resultado visible del portal EducaBCN después de la migración.*
-
-La captura se complementa con la prueba de conexión remota MySQL entre W-NCC y B-NCC descrita en `infrastructure/base-datos/sprint-02.md`.
-
-## Observaciones de implementación
-
-- No se requiere reinstalar MySQL en W-NCC.
-- El motor de datos sigue residiendo en B-NCC.
-- El dataset importado es estático hasta que exista un procedimiento de actualización.
-- Si cambia la IP privada del servidor de datos, debe actualizarse la configuración o utilizarse un DNS interno resuelto correctamente.
+La prueba de `nc` desde W-NCC a `172.31.102.10:3306` fue satisfactoria; **se ha demostrado el acceso TCP**, pero no se incluye en esta ampliación una captura del portal ejecutando consultas contra MySQL después del cambio de dirección. El archivo de configuración debe verificarse sin mostrar ni publicar su contraseña; no se reconstruye ni se sobrescribe aquí.

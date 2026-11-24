@@ -1,28 +1,39 @@
 # Sprint 2: planificación
 
-## Índice
 
-- [Línea de trabajo](#linea-de-trabajo)
-- [Evidencia de tareas asignadas en ProofHub](#evidencia-de-tareas-asignadas-en-proofhub)
+## Objetivo
+Separar W-NCC, B-NCC y F-NCC; introducir DNS/DHCP y verificar conectividad.
 
+## Periodo y reuniones
+28/10, 02/11 y 10/11/2026 (actas disponibles).
 
-**Objetivo:** separar Apache/PHP, MySQL y FTP en instancias independientes y añadir DNS/DHCP básicos, sin perder la consulta de los centros desde la aplicación.
+## Entregables esperados
+- Conservar snapshot del MVP.
+- Preparar W-NCC y B-NCC.
+- Instalar y configurar F-NCC.
+- Resolver nombres internos BIND9.
+- Verificar DHCP con cliente real.
+- Limitar MySQL a W-NCC.
+- Normalizar datos y validar web remota.
 
-En la reunión inicial del 28 de octubre de 2026 se justificó el nuevo MVP. La reunión del 2 de noviembre incluye como objetivos la configuración de la base de datos, FTP, DNS y DHCP. La reunión del 10 de noviembre registra B-NCC adaptada y W-NCC/F-NCC todavía en configuración, con la decisión de completar las máquinas y los servicios de nombres.
+## Criterio de cierre
+Funcionalidad ejecutada, pruebas registradas, documentación actualizada y tareas cerradas con enlaces al repositorio/ProofHub.
 
-## Línea de trabajo
+## Ampliación del alcance del Sprint 2
 
-1. Crear instancias W-NCC y F-NCC y mantener B-NCC a partir del prototipo.
-2. Preparar cuentas y comunicaciones privadas.
-3. Migrar Apache/PHP y los archivos de la aplicación a W-NCC.
-4. Habilitar conexión remota de lectura a MySQL en B-NCC.
-5. Instalar vsftpd, BIND9 e ISC DHCP en F-NCC.
-6. Verificar el funcionamiento de la web y los servicios auxiliares.
+Durante el desarrollo, el equipo decidió incorporar al Sprint 2 dos tareas antes etiquetadas S3.1 y S3.2. El orden original de la separación de servicios y las fechas de las reuniones se mantiene íntegro; el cambio se incorpora como una decisión posterior del backlog.
 
-## Evidencia de tareas asignadas en ProofHub
+| Identificador en la planificación revisada | Tarea incorporada | Alcance |
+|---|---|---|
+| S2.6 | Router y Redes | WAN/DMZ/Intranet, R-NCC, interfaces, tablas de rutas, IP Forwarding, NAT y migración de IP |
+| S2.7 | Aislamiento (Firewall) | Security Groups por servicio, protección SSH, pruebas de acceso permitido y bloqueado |
 
-La siguiente imagen es una captura original aportada por el equipo. Muestra las tarjetas situadas en la columna **«Asignadas spring»**, los participantes asignados mediante los iconos de usuario, el backlog pendiente y las columnas de seguimiento. Acredita la planificación y el reparto, **no** que las tareas de esa columna estén terminadas.
+La planificación del tercer sprint pasa a centrarse en efectos WOW de la aplicación. Las funciones futuras no se presentan como tareas ejecutadas.
 
-![Tablero original de tareas asignadas de Sprint 2](../../media/sprint-02/proofhub-sprint-02-tareas-asignadas.png)
+## Criterios específicos de aceptación incorporados
 
-Para verificar fechas exactas, comentarios y finalización se debe consultar el historial de la tarea dentro de ProofHub; estos datos no se deducen de esta vista general.
+- Mostrar la evolución de IP original → IP segmentada, sin borrar las anteriores.
+- Guardar capturas de las interfaces de R-NCC, rutas y comprobación de tráfico.
+- Verificar MySQL, FTP, DNS y accesos SSH que continúan funcionando.
+- Documentar un ejemplo de tráfico permitido y otro denegado.
+- Explicar límites reales: `FORWARD ACCEPT`, dirección de F-NCC en la Intranet y pruebas que no constan.

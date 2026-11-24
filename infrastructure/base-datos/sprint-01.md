@@ -1,89 +1,64 @@
-# Base de datos en el primer servidor: Sprint 1
+# Base de datos MySQL: Sprint 1
 
-## Índice
+La primera instalación de MySQL se realizó dentro de la instancia monolítica del proyecto, junto con Apache y PHP. El objetivo fue cargar datos reales y mostrarlos en el portal.
 
-- [Objetivo](#objetivo)
-- [1. Instalar y comprobar MySQL](#1-instalar-y-comprobar-mysql)
-- [2. Inicialización y usuarios](#2-inicializacion-y-usuarios)
-- [3. Importación del CSV](#3-importacion-del-csv)
-- [4. Verificaciones](#4-verificaciones)
-- [5. Consideraciones de calidad](#5-consideraciones-de-calidad)
+## Instalación y arranque de MySQL
 
-
-## Objetivo
-
-Instalar MySQL, crear la base de datos EducaBCN, importar el CSV de OpenData BCN y comprobar que la aplicación PHP puede leer sus registros.
-
-## 1. Instalar y comprobar MySQL
-
-Se instaló `mysql-server` en la instancia integrada y se comprobó el estado del servicio:
+Tras actualizar los paquetes se instaló MySQL Server y se comprobó el servicio mediante systemd. Se realizó el procedimiento de endurecimiento inicial del motor SQL.
 
 ```bash
+sudo apt update
 sudo apt install mysql-server -y
+sudo systemctl enable --now mysql
 sudo systemctl status mysql
+sudo mysql_secure_installation
 ```
 
-![Instalación de mysql-server en Ubuntu](../../media/sprint-01/p24_01.png)
+![Captura original del documento técnico: fuente p23 estado del servicio mysql](../../media/sprint-01/fuente-p23-estado-del-servicio-mysql.png)
 
-*Instalación de mysql-server en Ubuntu.*
+## Creación de la base de datos EducaBCN
 
-![Comprobación de que el servicio MySQL se encuentra activo](../../media/sprint-01/p24_03.png)
-
-*Comprobación de que el servicio MySQL se encuentra activo.*
-
-## 2. Inicialización y usuarios
-
-El equipo ejecutó las comprobaciones iniciales de endurecimiento y creó la base de datos. Para permitir la consulta local, utilizó un usuario MySQL de nombre `bchecker`. **No debe confundirse** con la cuenta Linux que también se llamó `bchecker`.
+Se creó la base de datos de la aplicación con codificación UTF-8 compatible con caracteres especiales en catalán y castellano. En las primeras pruebas se utilizó un usuario MySQL llamado `bchecker` para acceder a los datos; en Linux también se había creado una cuenta `bchecker` con permisos de `sudo`. Son cuentas distintas, aunque compartan nombre. El acceso SQL se describe aquí como una decisión histórica del prototipo: no se debe interpretar que los privilegios finales de ambos usuarios fueran mínimos. Para el servidor web separado, el Sprint 2 registra otra cuenta SQL, `webapp`, destinada a las consultas remotas.
 
 ```sql
-CREATE DATABASE EducaBCN
+CREATE DATABASE IF NOT EXISTS EducaBCN
   CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+SHOW DATABASES;
 ```
 
-El documento original incluye capturas en las que aparece una contraseña durante la creación del usuario. Por seguridad no se reproducen. Se debe comprobar la existencia de la base desde un usuario autorizado sin publicar credenciales.
 
-![Acceso del usuario de MySQL y comprobación de la base EducaBCN](../../media/sprint-01/p26_02.png)
+## Obtención y transferencia del CSV
 
-*Acceso del usuario de MySQL y comprobación de la base EducaBCN.*
+El conjunto de datos de centros educativos se descargó desde OpenData BCN. El documento registra su traslado desde el ordenador del equipo hacia la instancia por SCP, con posterior revisión del fichero en el servidor.
 
-## 3. Importación del CSV
+```bash
+scp -i RUTA_CLAVE_PRIVADA archivo.csv USUARIO_SSH@HOST_EC2:/ruta/destino/
+ls -lh /ruta/destino/archivo.csv
+file -bi /ruta/destino/archivo.csv
+```
 
-Se descargó el dataset a un equipo local y se copió a la instancia mediante `scp`. A continuación se estudió su formato y se importó en la tabla `centros_educativos`, con campos como nombre, distrito, barrio, dirección y teléfono.
+Los nombres en mayúsculas representan valores del entorno que no deben publicarse como secretos.
 
-![Transferencia del archivo CSV desde el equipo local](../../media/sprint-01/p27_01.png)
+![Captura original del documento técnico: fuente p26 transferencia del csv](../../media/sprint-01/fuente-p26-transferencia-del-csv.png)
 
-*Transferencia del archivo CSV desde el equipo local.*
+## Importación y verificación de registros
 
-![Inspección de cabeceras y campos del CSV de origen](../../media/sprint-01/p27_02.png)
-
-*Inspección de cabeceras y campos del CSV de origen.*
-
-En la documentación se reflejan problemas de codificación y de correspondencia de columnas, por los que se empleó una correspondencia explícita al importar. Antes de cargar de nuevo, es importante inspeccionar el separador, la codificación y la estructura del archivo en lugar de repetir sin cambios un comando diseñado para una versión concreta.
-
-![Importación del conjunto de datos en MySQL](../../media/sprint-01/p27_03.png)
-
-*Importación del conjunto de datos en MySQL.*
-
-## 4. Verificaciones
-
-Tras importar, se ejecutaron consultas de recuento y listados para comprobar el número y la estructura de los registros. La operación documentada devuelve **2.710 filas**.
+El procedimiento original describe la creación de una tabla de datos y su carga desde el CSV. Durante la importación surgieron cuestiones de codificación y estructura de columnas que motivaron el uso de una tabla intermedia de staging para la revisión del origen. La documentación señala una carga inicial de 2.710 registros.
 
 ```sql
 USE EducaBCN;
-SELECT COUNT(*) FROM centros_educativos;
-SELECT id, nombre, distrito, barrio, direccion, telefono
-FROM centros_educativos LIMIT 5;
-SELECT DISTINCT distrito FROM centros_educativos;
+SELECT COUNT(*) AS numero_centros FROM centros_educativos;
+SELECT * FROM centros_educativos LIMIT 10;
 ```
 
-![Consultas de datos y muestra inicial de centros educativos](../../media/sprint-01/p28_01.png)
+La verificación no consiste solo en recibir una respuesta SQL: también se comprueban nombres, acentos y columnas.
 
-*Consultas de datos y muestra inicial de centros educativos.*
+![Captura original del documento técnico: fuente p27 consultas de comprobaci n de datos](../../media/sprint-01/fuente-p27-consultas-de-comprobaci-n-de-datos.png)
 
-![Consulta de los distritos presentes en el dataset](../../media/sprint-01/p29_01.png)
+![Captura original del documento técnico: fuente p28 consulta de distritos](../../media/sprint-01/fuente-p28-consulta-de-distritos.png)
 
-*Consulta de los distritos presentes en el dataset.*
+## Consulta desde el portal
 
-## 5. Consideraciones de calidad
+El primer `index.php` leía desde `localhost` mediante PDO y mostraba hasta 50 registros en una tabla HTML. Los valores se escapaban con `htmlspecialchars` antes de mostrarse, evitando interpretar los textos procedentes de la base de datos como HTML.
 
-El CSV puede contener nombres repetidos por diferencias entre registros o servicios, teléfonos que deben conservarse como texto y acentos de distintos idiomas. La captura no demuestra que exista una normalización completa a tablas de barrios, distritos y tipos de centro. En este archivo se documenta la tabla consultada y su importación real.
+![Captura original del documento técnico: fuente p31 vista inicial de educabcn](../../media/sprint-01/fuente-p31-vista-inicial-de-educabcn.png)

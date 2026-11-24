@@ -1,26 +1,8 @@
-# Instalación y configuración de servicios
-
-## Índice
-
-- [Sprint 1: primera instancia](#sprint-1-primera-instancia)
-- [Sprint 2: separación de funciones](#sprint-2-separacion-de-funciones)
+# Procedimientos técnicos
 
 
-## Sprint 1: primera instancia
+La infraestructura está dividida por funciones. Cada servicio tiene documentación por sprint y un README. Se conservan configuraciones históricas sin presentar las versiones anteriores como definitivas. Para desplegar un entorno nuevo se debe usar la arquitectura vigente y consultar el manual de administración.
 
-- [Despliegue EC2, SSH y red](red/sprint-01.md)
-- [Instalación de Apache y PHP](web/sprint-01.md)
-- [Instalación e importación MySQL](base-datos/sprint-01.md)
-- [Aplicación PHP inicial](aplicacion/sprint-01.md)
+## Ampliación del Sprint 2
 
-## Sprint 2: separación de funciones
-
-- [W-NCC y F-NCC en AWS](red/sprint-02.md)
-- [W-NCC: instalación web y migración SCP](web/sprint-02.md)
-- [B-NCC: MySQL y cuenta remota](base-datos/sprint-02.md)
-- [F-NCC: servicio FTP](ftp/sprint-02.md)
-- [F-NCC: BIND9 e ISC DHCP](dns-dhcp/sprint-02.md)
-- [Aplicación adaptada al servidor remoto](aplicacion/sprint-02.md)
-- [Archivos index.php, versión documentada y provisional](aplicacion/codigo/README.md)
-
-Las imágenes se muestran junto a los pasos correspondientes y son capturas originales. Los ejemplos de configuración se deben verificar contra los archivos activos antes de volver a desplegarlos.
+La segmentación WAN/DMZ/Intranet, el router R-NCC, NAT y la migración de IP privadas están incorporados a [red/sprint-02.md](red/sprint-02.md). La adaptación de BIND9 figura en [dns-dhcp/sprint-02.md](dns-dhcp/sprint-02.md). El detalle de acceso se documenta en [firewall y Security Groups](../security/configuracion-accesos.md) y las verificaciones en [pruebas de segmentación](../tests/pruebas-sprint-02-segmentacion.md). Las configuraciones iniciales permanecen como histórico.

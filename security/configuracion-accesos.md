@@ -1,51 +1,74 @@
-# Cuentas, permisos y controles de acceso
+# Firewall y control de accesos: ampliación del Sprint 2 (S2.7)
 
-## Índice
+## Objetivo y alcance
 
-- [Inventario de cuentas](#inventario-de-cuentas)
-- [Reglas y seguridad de red](#reglas-y-seguridad-de-red)
-- [Credenciales de aplicación](#credenciales-de-aplicacion)
-- [Puntos que requieren una interpretación exacta](#puntos-que-requieren-una-interpretacion-exacta)
-- [Cuenta de validación del profesorado](#cuenta-de-validacion-del-profesorado)
+Para terminar la infraestructura distribuida se trasladó al Sprint 2 la tarea denominada antes S3.2: sustituir el Security Group compartido por políticas distintas para R-NCC, W-NCC, B-NCC y F-NCC, mantener la administración por SSH a través del router y comprobar las comunicaciones necesarias. El aislamiento aplicado mediante **AWS Security Groups** no equivale a un filtrado completo por `iptables` entre todas las subredes.
 
+## Situación previa: grupo compartido
 
-## Inventario de cuentas
+Las instancias utilizaban el grupo `sgrncceducabcn` con SSH desde `0.0.0.0/0` y «todo el tráfico» desde `172.31.0.0/16`. Era útil para pruebas iniciales, pero demasiado amplio para aislar servicios. El equipo creó grupos específicos y comunicó la retirada del grupo antiguo de las instancias/interfaces tras asociar los nuevos. Las capturas originales del estado previo permanecen en la documentación de la separación de servidores.
 
-| Cuenta | Sistema | Uso documentado |
-|---|---|---|
-| `ubuntu` | Linux EC2 | Cuenta inicial de administración de Ubuntu |
-| `bchecker` | Linux | Cuenta creada durante el primer despliegue, con permisos `sudo` en las capturas |
-| `bchecker` | MySQL | Cuenta inicial de acceso a la base de datos del primer prototipo |
-| `bdd_admin` | Linux en B-NCC | Administración de la instancia de base de datos |
-| `web_admin` | Linux en W-NCC | Administración del servidor web |
-| `ftp_admin` | Linux en F-NCC | Administración del servicio FTP y servicios auxiliares |
-| `ftpuser` | Linux / vsftpd | Cuenta destinada a transferencias de archivos |
-| `webapp` | MySQL | Acceso remoto de lectura desde la aplicación PHP |
+## 1. SG-BBDD-EducaBCN: MySQL
 
-La coincidencia de nombre no convierte a una cuenta Linux en una cuenta MySQL; tienen contraseñas y permisos gestionados por sistemas diferentes.
+| Dirección | Protocolo / puerto | Origen o destino | Justificación |
+|---|---|---|---|
+| Entrada | TCP 22 | `172.31.102.254/32` (R-NCC, interfaz Intranet) | Administración SSH desde el punto de salto |
+| Entrada | TCP 3306 | `172.31.101.10/32` (W-NCC) | Consultas MySQL de la aplicación PHP |
+| Salida | Todos | `0.0.0.0/0` | Se mantuvo la salida general en esta fase |
 
-## Reglas y seguridad de red
+![Reglas creadas para SG-BBDD-EducaBCN](../media/sprint-02/sg-bbdd-creacion.png)
 
-El equipo añadió reglas ICMP de prueba y habilitó el tráfico necesario para la web, FTP y MySQL. Para un uso sostenido debe limitarse el puerto 3306 de B-NCC exclusivamente al origen W-NCC (idealmente su Security Group), y SSH a los orígenes autorizados. Los registros de las capturas no permiten afirmar que esos límites ya se hayan aplicado de forma exhaustiva.
+La captura muestra los permisos definidos al crear el grupo, no un registro de paquetes real. La prueba desde W-NCC confirma el acceso al puerto 3306 y el bloqueo observado de ICMP y SSH directo.
 
-## Credenciales de aplicación
+## 2. SG-Web-EducaBCN: Apache/PHP
 
-El archivo `/etc/educabcn.conf` se preparó para almacenar la configuración fuera del directorio público. Se documentan propietario `root:www-data` y modo `640`, con lectura para el proceso web. Cualquier cambio en la credencial MySQL debe reflejarse también en esa configuración, siempre que PHP la esté utilizando realmente.
+| Dirección | Protocolo / puerto | Origen o destino | Justificación |
+|---|---|---|---|
+| Entrada | TCP 22 | `172.31.101.254/32` (R-NCC, interfaz DMZ) | Administración por el router |
+| Entrada | TCP 80 | `0.0.0.0/0` | Servicio HTTP del portal |
+| Entrada | TCP 443 | `0.0.0.0/0` | Puerto reservado para HTTPS cuando se configure |
+| Salida | Todos | `0.0.0.0/0` | Acceso a MySQL, DNS y servicios necesarios |
 
-## Puntos que requieren una interpretación exacta
+![Reglas creadas para SG-Web-EducaBCN](../media/sprint-02/sg-web-creacion.png)
 
-- `bind-address=0.0.0.0` hace que MySQL escuche en interfaces IPv4; no filtra orígenes.
-- Un usuario MySQL declarado con host `%` admite intentos de conexión desde varios orígenes; los controles externos deben reducir la superficie.
-- `chroot` limita la navegación del usuario FTP, pero no cifra FTP.
-- Habilitar `PasswordAuthentication yes` facilita el acceso de prueba; no es equivalente a autenticación exclusiva por claves.
-- `PDO` permite consultas preparadas, pero el uso de una consulta `query()` simple no demuestra que todas las entradas futuras estén parametrizadas.
+Permitir 80/443 en un Security Group **no asigna una IP pública ni publica automáticamente el portal**. HTTPS/443 permitido tampoco demuestra que se haya instalado un certificado TLS.
 
-Estas observaciones separan los hechos del proyecto de las recomendaciones habituales de administración segura.
+## 3. SG-FTP-EducaBCN: FTP, DNS
 
-## Cuenta de validación del profesorado
+| Dirección | Protocolo / puerto | Origen o destino | Justificación |
+|---|---|---|---|
+| Entrada | TCP 22 | `172.31.102.254/32` (R-NCC, interfaz Intranet) | Administración SSH |
+| Entrada | TCP 21 | `172.31.0.0/16` | Canal de control FTP de la VPC |
+| Entrada | TCP 40000–40100 | `172.31.0.0/16` | Rango pasivo configurado para FTP |
+| Entrada | TCP 53 | `172.31.0.0/16` | Consultas DNS sobre TCP |
+| Entrada | UDP 53 | `172.31.0.0/16` | Consultas DNS habituales |
+| Salida | Todos | `0.0.0.0/0` | Se mantuvo la salida general |
 
-El enunciado requiere una cuenta denominada `bchecker` que permita a los profesores acceder a los equipos y verificar la práctica. Se creó en los servidores documentados y debe comprobarse su acceso según los permisos autorizados en cada máquina. No publicar la contraseña exigida por el enunciado ni incluirla en capturas, scripts o ficheros del repositorio.
+![Reglas creadas para SG-FTP-EducaBCN](../media/sprint-02/sg-ftp-creacion.png)
 
-**Identidades diferentes:** el usuario Linux `bchecker` habilita la validación de servidores; la cuenta MySQL `bchecker` utilizada al principio es independiente de Linux; en el segundo sprint la conexión PHP remota utiliza `webapp` con permisos de lectura. No se deben confundir ni dar por probados privilegios de una cuenta a partir de los de otra.
+Esta política se diseñó con F-NCC en `172.31.102.20` (Intranet). El alcance `172.31.0.0/16` permite más orígenes de los estrictamente imprescindibles y se podrá restringir más adelante. No se añadió una regla DHCP específica para asignar IP a instancias AWS, función que gestiona AWS.
 
-Para verificar la existencia de la cuenta Linux, el administrador puede ejecutar `id bchecker` en cada servidor. `id` muestra el UID, GID y grupos de la cuenta. Para comprobar la cuenta MySQL se revisan los privilegios desde una sesión administrativa autorizada, sin mostrar credenciales en pantalla.
+## 4. SG-Router-EducaBCN: WAN, DMZ e Intranet
+
+| Dirección | Protocolo / puerto | Origen o destino | Justificación |
+|---|---|---|---|
+| Entrada | TCP 22 | `0.0.0.0/0` | Acceso SSH desde distintas ubicaciones; exige autenticación fuerte |
+| Entrada | Todos | `172.31.101.0/24` (DMZ) | Tráfico de la DMZ hacia R-NCC |
+| Entrada | Todos | `172.31.102.0/24` (Intranet) | Tráfico de la Intranet hacia R-NCC |
+| Salida | Todos | `0.0.0.0/0` | Tráfico de salida y respuesta |
+
+![Reglas creadas para SG-Router-EducaBCN](../media/sprint-02/sg-router-creacion.png)
+
+R-NCC tiene **tres interfaces ENI**, una por zona; los Security Groups se administran por interfaz y no exclusivamente por el nombre de instancia. El equipo revisó las interfaces y sustituyó el grupo antiguo por el nuevo. La protección SSH observada en R-NCC está documentada en [SSH](ssh.md).
+
+**Riesgo residual:** abrir SSH a `0.0.0.0/0` permite intentos de conexión desde Internet, aunque se exija una clave. Es preferible restringir los orígenes administrativos, usar una VPN o un método equivalente. Mantener una política `FORWARD ACCEPT` sin reglas específicas tampoco constituye aislamiento de todos los protocolos entre DMZ e Intranet.
+
+## 5. Comportamiento verificado
+
+La captura con las pruebas de firewall se encuentra en [verificación del Sprint 2](../tests/pruebas-sprint-02-segmentacion.md). Desde W-NCC se obtuvo `succeeded` al abrir TCP/3306 de B-NCC y TCP/21 de F-NCC; BIND9 devolvió la IP correcta de B-NCC; el ping y la conexión TCP/22 directos de W-NCC a B-NCC no respondieron. B-NCC obtuvo `HTTP/2 200` al salir a Internet.
+
+Los Security Groups son **stateful**: permiten las respuestas del tráfico iniciado y permitido sin añadir reglas entrantes de respuesta. Un `timeout` en una prueba concreta acredita que dicha conexión no se completó, pero no sustituye a una revisión de todas las rutas y puertos posibles.
+
+## 6. Límites del aislamiento
+
+Las pruebas documentadas muestran una separación funcional de permisos entrantes por servidor, no una auditoría total de seguridad. En R-NCC se observó `iptables -L FORWARD -n -v` con política `ACCEPT` y sin reglas particulares, por lo que no se debe afirmar un firewall interzona completo a nivel del router. Además, F-NCC permanece en la Intranet pese a que una tarjeta anterior del backlog sugería situarlo en DMZ. Si ese requisito se mantiene, faltará implementarlo y volver a probar la conectividad.

@@ -1,30 +1,37 @@
-# Sprint 2: revisión y cierre
+# Revisión técnica del Sprint 2
 
-## Índice
+## Propósito de la fase
 
-- [Resultado técnico](#resultado-tecnico)
-- [Validación](#validacion)
-- [Qué queda fuera de la validación documentada](#que-queda-fuera-de-la-validacion-documentada)
+Separar la aplicación, la base de datos y el servicio de transferencia entre los nodos W-NCC, B-NCC y F-NCC. Incorporar resolución DNS interna y configuración de DHCP. Conservar la continuidad del catálogo EducaBCN al abandonar el prototipo monolítico.
 
+## Trabajo documentado
 
-El equipo comunicó el cierre del segundo sprint después de verificar el despliegue de la web desde W-NCC. La versión actualizada del PDF incorpora capturas del comando `scp`, de los archivos alojados en Apache y de la tabla de centros educativos vista desde el navegador.
+- Creación de instancias EC2 para web y FTP y revisión de Security Groups.
+- Cambio de hostname y preparación de cuentas de administración.
+- Instalación de Apache, PHP y cliente MySQL en W-NCC.
+- Desactivación de Apache en el servidor original B-NCC.
+- Configuración de conectividad y credenciales de la aplicación fuera del código PHP.
+- Instalación y configuración de vsftpd en F-NCC con estructura de directorios.
+- Instalación de BIND9 y definición de zona interna.
+- Instalación de ISC DHCP y comprobación de estado del servicio.
+- Consultas DNS desde los servidores web y de datos.
 
-## Resultado técnico
+## Comprobaciones conservadas
 
-- W-NCC ejecuta la aplicación web separada de la base de datos.
-- B-NCC conserva MySQL y acepta consultas remotas desde el servidor web según las pruebas registradas.
-- F-NCC contiene vsftpd y los servicios BIND9 e ISC DHCP instalados.
-- Las pruebas de DNS muestran resolución de nombres de la zona interna en varios servidores.
+Las pruebas y capturas se incluyen en los documentos por componente de `infrastructure/`. El presente registro recoge el alcance de la fase sin sustituir a las instrucciones técnicas.
 
-## Validación
+## Historia de las reuniones
 
-La [matriz de pruebas](../../tests/pruebas-sprint-02.md) enlaza los procedimientos y capturas correspondientes. Los resultados deben leerse con su alcance concreto: por ejemplo, no se confunde tener ISC DHCP activo con haber demostrado una concesión de IP a un cliente de prueba.
+El 28 de octubre se acordó el inicio y alcance del sprint. El 2 de noviembre se priorizaron base de datos, FTP, DNS y DHCP. El 10 de noviembre se informó de la actualización de B-NCC y la configuración en desarrollo de W-NCC y F-NCC. Las capturas posteriores del documento muestran avances adicionales en dichos servicios.
 
-**Resultado:** el portal continuó mostrando datos después de separar los servidores, que era el hito principal de la migración.
+## Resultados de la ampliación: router y seguridad
 
+Tras la distribución inicial de servicios se incorporaron R-NCC, una red WAN, una DMZ y una Intranet. Se registraron la nueva asignación de IP, la salida NAT por `ens5`, el acceso administrativo mediante R-NCC y la sustitución del Security Group compartido por cuatro grupos diferenciados.
 
-## Qué queda fuera de la validación documentada
+Las pruebas conservadas muestran una respuesta HTTPS correcta desde B-NCC, tráfico en `ens7` y `ens5`, accesibilidad de MySQL y FTP desde W-NCC, resolución DNS actualizada para `db.educabcn.local`, y bloqueo observado de ICMP y SSH directo de W-NCC hacia B-NCC. La autenticación SSH del router se reforzó al deshabilitar el acceso directo de root.
 
-El cierre del MVP distribuido se apoya en las capturas de las instancias y en el resultado de la aplicación. El tablero muestra asignaciones, no certifica el cierre individual de las tarjetas. La normalización a varias tablas, la concesión DHCP a los dos clientes, las pruebas cuantitativas de rendimiento y el despliegue del portal mediante Git requieren verificaciones adicionales antes de presentarse como completados.
+Esta revisión diferencia el resultado observado del alcance aún no acreditado: la política `FORWARD ACCEPT` del router no aplica un filtrado interzona granular, F-NCC sigue en Intranet y las capturas de tráfico no relacionan inequívocamente una sola conexión a través del NAT. Se documenta el estado real para que la siguiente decisión técnica sea reproducible.
 
-[Tablero real de tareas asignadas](planning.md#evidencia-de-tareas-asignadas-en-proofhub) · [Pruebas del sprint](../../tests/pruebas-sprint-02.md).
+- [Router, redes y NAT](../../infrastructure/red/sprint-02.md)
+- [Reglas de firewall](../../security/configuracion-accesos.md)
+- [Pruebas realizadas](../../tests/pruebas-sprint-02-segmentacion.md)

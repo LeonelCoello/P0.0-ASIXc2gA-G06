@@ -1,18 +1,9 @@
-# Pruebas y criterios de validación
+# Comprobaciones de EducaBCN
 
-## Índice
+Las comprobaciones que cuentan con capturas y descripciones técnicas se han integrado en los procedimientos de instalación. Esta carpeta reúne las pruebas que pueden reproducirse, sin presentarlas como resultados de una batería aún no ejecutada.
 
-- [Evidencias disponibles](#evidencias-disponibles)
-- [Plan de medidas pendiente](#plan-de-medidas-pendiente)
+- [Conectividad y resolución de nombres](conectividad.md)
+- [Comprobaciones de seguridad](seguridad.md)
+- [Criterios de validación](plan-pruebas.md)
 
-
-## Evidencias disponibles
-
-- [Pruebas del Sprint 1](pruebas-sprint-01.md)
-- [Pruebas del Sprint 2](pruebas-sprint-02.md)
-
-## Plan de medidas pendiente
-
-- [Rendimiento, disponibilidad y seguridad](criterios-rendimiento-disponibilidad.md)
-
-Las pruebas funcionales documentadas no equivalen a disponibilidad medida durante semanas ni a resultados de un benchmark. Las verificaciones previstas se separan de las realizadas.
+- [Pruebas de router, NAT, DNS y firewall del Sprint 2](pruebas-sprint-02-segmentacion.md)

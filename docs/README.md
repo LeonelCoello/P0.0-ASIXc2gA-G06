@@ -1,30 +1,8 @@
-# Documentación de análisis y gestión
-
-## Índice
-
-- [Planteamiento y decisiones](#planteamiento-y-decisiones)
-- [Organización y control](#organizacion-y-control)
-- [Manuales](#manuales)
+# Documentación general
 
 
-## Planteamiento y decisiones
+Se incluyen el análisis, la planificación, los recursos, la prevención de riesgos, el plan de contingencia y manuales de uso y administración. La memoria técnica original describe decisiones futuras como si ya estuvieran implantadas; en esta versión se distinguen los hechos observables de los objetivos futuros. Para una entrega final es necesario aportar fechas, autores, evidencias y resultados de validación.
 
-- [Objetivos y necesidades](objetivos-y-necesidades.md)
-- [Análisis de mercado y recursos públicos existentes](analisis-de-mercado.md)
-- [Comparación de tecnologías](estudio-de-tecnologias.md)
-- [Justificación de elecciones](justificacion-de-elecciones.md)
+## Actualización de la infraestructura
 
-## Organización y control
-
-- [Planificación](planificacion.md)
-- [Recursos y presupuesto](recursos-y-presupuesto.md)
-- [Git y control de versiones](control-versiones.md)
-- [Riesgos laborales](riesgos-laborales.md)
-- [Contingencia](contingencia.md)
-
-## Manuales
-
-- [Manual de cliente](manual-cliente.md)
-- [Manual de administrador](manual-administrador.md)
-
-Los procedimientos técnicos con capturas se encuentran en [infraestructura](../infrastructure/README.md). Se distingue entre trabajo ejecutado, capturas de verificación y propuestas futuras.
+La reorganización del Sprint 2 —que ahora comprende también router, NAT y firewall— se explica en [planificación](planificacion.md), [registro de decisiones](registro-decisiones.md) y [manual de administración](manual-administrador.md). Se conserva el historial técnico de la primera etapa de los servidores con las IP originales.

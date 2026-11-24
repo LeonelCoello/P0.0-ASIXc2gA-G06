@@ -1,20 +1,13 @@
-# Sprint 1: retrospectiva
+# Retrospectiva del Sprint 1
 
-## Índice
+## Qué funcionó bien
 
-- [Aspectos que funcionaron](#aspectos-que-funcionaron)
-- [Dificultades señaladas](#dificultades-senaladas)
-- [Aprendizaje aplicado](#aprendizaje-aplicado)
+La reunión del 21 de octubre recoge la instalación de Apache y PHP, la carga del CSV en MySQL y la publicación del portal. El equipo indica que el despliegue técnico se validó sin bloqueos en esa revisión.
 
+## Dificultades identificadas
 
-## Aspectos que funcionaron
+En el cierre del 27 de octubre se indica que hubo algunas dificultades con la documentación, aunque finalmente se resolvieron. No se describen incidencias técnicas adicionales que deban atribuirse a esta fase.
 
-La entrega incremental permitió instalar servicios, importar los datos y visualizar el resultado en una misma instancia sin introducir desde el principio problemas de conectividad entre máquinas.
+## Mejoras acordes con la experiencia
 
-## Dificultades señaladas
-
-En el cierre del 27 de octubre el equipo indicó que hubo algunas dificultades con la documentación, aunque consiguió revisarla. No constan incidencias críticas del funcionamiento de los servicios en el acta de cierre.
-
-## Aprendizaje aplicado
-
-La experiencia facilitó planificar el segundo sprint como una migración controlada, conservando el sistema de datos y trasladando la aplicación a una instancia independiente.
+Documentar instalaciones y pruebas al mismo tiempo que se ejecutan para evitar reconstruir los procedimientos al final. Mantener las capturas junto al paso correspondiente y relacionar el trabajo con las tareas de ProofHub y los cambios en Git.
